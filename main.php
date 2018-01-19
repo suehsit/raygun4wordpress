@@ -146,7 +146,9 @@
 
         $uri = $_SERVER['REQUEST_URI'];
 
-        $client->SendError(404, '404 Not Found: '.$uri, home_url().$uri, '0', $tags);
+        if (rg4wp_ok_to_log($uri)) {
+          $client->SendError(404, '404 Not Found: '.$uri, home_url().$uri, '0', $tags);
+        }
       }
   }
 
@@ -228,4 +230,25 @@
   function rg4wp_admin_styles($hook) {
     wp_register_style( 'rg4wp_css', plugins_url('css/style.css', __FILE__), false, '1.0.0' );
     wp_enqueue_style( 'rg4wp_css' );
+  }
+
+  // Only send the error if the URI isn't mentioned in the $blacklist array
+  function rg4wp_ok_to_log($uri) {
+    $blacklist = array('/print/', 'node/', '/file/', 'styles/med-square/', '/styles/icon__', '/themes/ehs_theme/', '/default/files/js/', '/default/files/css/', 'robots.txt', '/sites/all/modules/', '/sites/all/libraries/', 'saml_login', '?search', 'drupal.js', '?f[0]=field_related_topics', '?f[0]=field_related_role', '?f%5B0%5D=field_related_topics', '?f%5B0%5D=field_related_role', 'chemical-hygiene-planup.php', '/system/files/images/callout/', 'up.php', 'user/register', '&wd=test', '?author=', '.jsp', '.asp', '.zip', '.gz', '.tar', '.old', '.inc', '.bak', '/struts2', '?wsdl', '.test2', '.orig', 'qualys', '~', 'kitten-large.png', '@stanford.edu', '@slac.stanford.edu', 'sitemap', 'precomposed.png');
+
+    // Loop over the $blacklist array and see if any of the items exist in $uri
+    $matchFound = false;
+
+    foreach ($blacklist as $value) {
+
+      if (stripos($uri, $value) !== false) {
+        $matchFound = true;
+      }
+    }
+
+    if ($matchFound === true) {
+      return false; // Match found, do not log this URI
+    } else {
+      return true; // Match not found, okay to log
+    }
   }
